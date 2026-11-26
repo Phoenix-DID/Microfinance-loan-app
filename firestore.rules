@@ -1,0 +1,268 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Primitive Helpers ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        request.auth.token.email == 'inioluwadavid05@gmail.com';
+    }
+
+    // --- Validation Blueprints ---
+    function isValidUser(data, userId) {
+      return data.keys().hasAll([
+        'uid', 'displayName', 'email', 'branchName', 'role', 'seeded', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'uid', 'displayName', 'email', 'branchName', 'role', 'seeded', 'createdAt', 'updatedAt'
+      ]) &&
+      data.uid is string && data.uid == userId && isValidId(data.uid) &&
+      data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 120 &&
+      data.email is string && data.email.size() >= 3 && data.email.size() <= 200 &&
+      data.branchName is string && data.branchName.size() >= 1 && data.branchName.size() <= 120 &&
+      data.role is string && (data.role == 'officer' || (data.role == 'admin' && isAdmin())) &&
+      data.seeded is bool &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidLoan(data) {
+      return data.keys().hasAll([
+        'ownerId', 'loanCode', 'borrowerName', 'businessName', 'sector', 'productType',
+        'principalAmount', 'interestRateApr', 'termMonths', 'repaymentCadence',
+        'totalRepayable', 'paidAmount', 'remainingBalance', 'installmentAmount',
+        'status', 'disbursedDate', 'nextDueDate', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'ownerId', 'loanCode', 'borrowerName', 'businessName', 'sector', 'productType',
+        'principalAmount', 'interestRateApr', 'termMonths', 'repaymentCadence',
+        'totalRepayable', 'paidAmount', 'remainingBalance', 'installmentAmount',
+        'status', 'disbursedDate', 'nextDueDate', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidId(data.ownerId) &&
+      data.loanCode is string && data.loanCode.size() >= 3 && data.loanCode.size() <= 24 && data.loanCode.matches('^[A-Z0-9\\-]+$') &&
+      data.borrowerName is string && data.borrowerName.size() >= 2 && data.borrowerName.size() <= 120 &&
+      data.businessName is string && data.businessName.size() >= 2 && data.businessName.size() <= 140 &&
+      data.sector is string && data.sector.size() >= 2 && data.sector.size() <= 80 &&
+      data.productType is string && data.productType.size() >= 2 && data.productType.size() <= 80 &&
+      data.principalAmount is number && data.principalAmount > 0 && data.principalAmount <= 10000000 &&
+      data.interestRateApr is number && data.interestRateApr >= 0 && data.interestRateApr <= 100 &&
+      data.termMonths is number && data.termMonths >= 1 && data.termMonths <= 120 &&
+      data.repaymentCadence is string && data.repaymentCadence in ['Monthly', 'Bi-weekly', 'Weekly'] &&
+      data.totalRepayable is number && data.totalRepayable >= data.principalAmount &&
+      data.paidAmount is number && data.paidAmount >= 0 &&
+      data.remainingBalance is number && data.remainingBalance >= 0 &&
+      data.installmentAmount is number && data.installmentAmount > 0 &&
+      data.status is string && data.status in ['Pending Review', 'Active', 'Overdue', 'Settled'] &&
+      data.disbursedDate is string && data.disbursedDate.size() <= 32 &&
+      data.nextDueDate is string && data.nextDueDate.size() <= 32 &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll([
+        'ownerId', 'loanId', 'loanCode', 'borrowerName', 'referenceCode',
+        'type', 'direction', 'amount', 'channel', 'status', 'occurredAt', 'notes', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'ownerId', 'loanId', 'loanCode', 'borrowerName', 'referenceCode',
+        'type', 'direction', 'amount', 'channel', 'status', 'occurredAt', 'notes', 'createdAt'
+      ]) &&
+      isValidId(data.ownerId) &&
+      isValidId(data.loanId) &&
+      data.loanCode is string && data.loanCode.size() >= 3 && data.loanCode.size() <= 24 && data.loanCode.matches('^[A-Z0-9\\-]+$') &&
+      data.borrowerName is string && data.borrowerName.size() >= 2 && data.borrowerName.size() <= 120 &&
+      data.referenceCode is string && data.referenceCode.size() >= 3 && data.referenceCode.size() <= 40 && data.referenceCode.matches('^[A-Z0-9\\-]+$') &&
+      data.type is string && data.type in ['Repayment', 'Disbursement', 'Fee Assessment', 'Principal Adjustment'] &&
+      data.direction is string && data.direction in ['inflow', 'outflow'] &&
+      data.amount is number && data.amount > 0 && data.amount <= 10000000 &&
+      data.channel is string && data.channel.size() >= 2 && data.channel.size() <= 60 &&
+      data.status is string && data.status in ['Settled', 'Pending', 'Reversed'] &&
+      data.occurredAt is string && data.occurredAt.size() >= 8 && data.occurredAt.size() <= 32 &&
+      data.notes is string && data.notes.size() <= 240 &&
+      data.createdAt is timestamp;
+    }
+
+    function isValidDeadline(data) {
+      return data.keys().hasAll([
+        'ownerId', 'loanId', 'loanCode', 'borrowerName', 'installmentNumber',
+        'totalInstallments', 'amountDue', 'principalPortion', 'interestPortion',
+        'dueDate', 'status', 'paidAt', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'ownerId', 'loanId', 'loanCode', 'borrowerName', 'installmentNumber',
+        'totalInstallments', 'amountDue', 'principalPortion', 'interestPortion',
+        'dueDate', 'status', 'paidAt', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidId(data.ownerId) &&
+      isValidId(data.loanId) &&
+      data.loanCode is string && data.loanCode.size() >= 3 && data.loanCode.size() <= 24 && data.loanCode.matches('^[A-Z0-9\\-]+$') &&
+      data.borrowerName is string && data.borrowerName.size() >= 2 && data.borrowerName.size() <= 120 &&
+      data.installmentNumber is number && data.installmentNumber >= 1 && data.installmentNumber <= 240 &&
+      data.totalInstallments is number && data.totalInstallments >= 1 && data.totalInstallments <= 240 &&
+      data.amountDue is number && data.amountDue > 0 && data.amountDue <= 10000000 &&
+      data.principalPortion is number && data.principalPortion >= 0 &&
+      data.interestPortion is number && data.interestPortion >= 0 &&
+      data.dueDate is string && data.dueDate.size() >= 8 && data.dueDate.size() <= 32 &&
+      data.status is string && data.status in ['Pending', 'Due Soon', 'Overdue', 'Paid'] &&
+      data.paidAt is string && data.paidAt.size() <= 32 &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+
+    // 1. User Profiles (PII Isolated)
+    match /users/{userId} {
+      allow list: if false;
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow create: if isValidId(userId) &&
+        isOwner(userId) &&
+        isValidUser(incoming(), userId) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(userId) &&
+        isValidUser(incoming(), userId) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().uid == existing().uid &&
+        incoming().updatedAt == request.time &&
+        (
+          isAdmin() ||
+          (
+            isOwner(userId) &&
+            incoming().role == existing().role &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'branchName', 'seeded', 'updatedAt'])
+          )
+        );
+      allow delete: if false;
+    }
+
+    // 2. Loan Accounts
+    match /loans/{loanId} {
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow get: if isValidId(loanId) && isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow create: if isValidId(loanId) &&
+        isSignedIn() &&
+        isValidLoan(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(loanId) &&
+        isSignedIn() &&
+        isValidLoan(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          isAdmin() ||
+          (
+            existing().ownerId == request.auth.uid &&
+            existing().status != 'Settled' &&
+            (
+              // Action: Approve & Disburse Pending Loan
+              (
+                existing().status == 'Pending Review' &&
+                incoming().status == 'Active' &&
+                incoming().diff(existing()).affectedKeys().hasOnly(['status', 'disbursedDate', 'nextDueDate', 'updatedAt'])
+              ) ||
+              // Action: Record Repayment
+              (
+                existing().status in ['Active', 'Overdue'] &&
+                incoming().paidAmount > existing().paidAmount &&
+                incoming().remainingBalance < existing().remainingBalance &&
+                incoming().diff(existing()).affectedKeys().hasOnly(['paidAmount', 'remainingBalance', 'status', 'nextDueDate', 'updatedAt'])
+              ) ||
+              // Action: Update Borrower Details
+              (
+                incoming().diff(existing()).affectedKeys().hasOnly(['borrowerName', 'businessName', 'sector', 'updatedAt'])
+              )
+            )
+          )
+        );
+      allow delete: if isValidId(loanId) && isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 3. Loan Transactions (Immutable Ledger + Master Gate via loanId)
+    match /transactions/{transactionId} {
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow get: if isValidId(transactionId) && isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow create: if isValidId(transactionId) &&
+        isSignedIn() &&
+        isValidTransaction(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        existsAfter(/databases/$(database)/documents/loans/$(incoming().loanId)) &&
+        getAfter(/databases/$(database)/documents/loans/$(incoming().loanId)).data.ownerId == request.auth.uid;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // 4. Payment Deadlines (Master Gate via loanId + Terminal Lock when Paid)
+    match /deadlines/{deadlineId} {
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow get: if isValidId(deadlineId) && isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow create: if isValidId(deadlineId) &&
+        isSignedIn() &&
+        isValidDeadline(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        existsAfter(/databases/$(database)/documents/loans/$(incoming().loanId)) &&
+        getAfter(/databases/$(database)/documents/loans/$(incoming().loanId)).data.ownerId == request.auth.uid;
+      allow update: if isValidId(deadlineId) &&
+        isSignedIn() &&
+        isValidDeadline(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().loanId == existing().loanId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          isAdmin() ||
+          (
+            existing().ownerId == request.auth.uid &&
+            existing().status != 'Paid' &&
+            (
+              // Action: Mark Installment Paid
+              (
+                incoming().status == 'Paid' &&
+                incoming().paidAt.size() >= 8 &&
+                incoming().diff(existing()).affectedKeys().hasOnly(['status', 'paidAt', 'updatedAt'])
+              ) ||
+              // Action: Escalate / Refresh Status
+              (
+                incoming().status in ['Pending', 'Due Soon', 'Overdue'] &&
+                incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+              )
+            )
+          )
+        );
+      allow delete: if isValidId(deadlineId) && isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+  }
+}

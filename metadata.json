@@ -1,0 +1,8 @@
+{
+  "name": "Meridian Microfinance",
+  "description": "Corporate microfinance banking portal with secure authentication, loan origination, repayment scheduling, and live transaction and deadline tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

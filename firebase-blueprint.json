@@ -1,0 +1,337 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated microfinance officer profile and workspace settings.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 200
+        },
+        "branchName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "role": {
+          "type": "string",
+          "enum": ["officer", "admin"]
+        },
+        "seeded": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "email", "branchName", "role", "seeded", "createdAt", "updatedAt"]
+    },
+    "LoanAccount": {
+      "title": "LoanAccount",
+      "description": "Microfinance loan account managed by an authenticated user.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "loanCode": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 24,
+          "pattern": "^[A-Z0-9\\-]+$"
+        },
+        "borrowerName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "businessName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 140
+        },
+        "sector": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "productType": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "principalAmount": {
+          "type": "number"
+        },
+        "interestRateApr": {
+          "type": "number"
+        },
+        "termMonths": {
+          "type": "number"
+        },
+        "repaymentCadence": {
+          "type": "string",
+          "enum": ["Monthly", "Bi-weekly", "Weekly"]
+        },
+        "totalRepayable": {
+          "type": "number"
+        },
+        "paidAmount": {
+          "type": "number"
+        },
+        "remainingBalance": {
+          "type": "number"
+        },
+        "installmentAmount": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Pending Review", "Active", "Overdue", "Settled"]
+        },
+        "disbursedDate": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "nextDueDate": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "loanCode",
+        "borrowerName",
+        "businessName",
+        "sector",
+        "productType",
+        "principalAmount",
+        "interestRateApr",
+        "termMonths",
+        "repaymentCadence",
+        "totalRepayable",
+        "paidAmount",
+        "remainingBalance",
+        "installmentAmount",
+        "status",
+        "disbursedDate",
+        "nextDueDate",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "LoanTransaction": {
+      "title": "LoanTransaction",
+      "description": "Immutable financial transaction ledger entry for a loan account.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "loanId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "loanCode": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 24,
+          "pattern": "^[A-Z0-9\\-]+$"
+        },
+        "borrowerName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "referenceCode": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40,
+          "pattern": "^[A-Z0-9\\-]+$"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["Repayment", "Disbursement", "Fee Assessment", "Principal Adjustment"]
+        },
+        "direction": {
+          "type": "string",
+          "enum": ["inflow", "outflow"]
+        },
+        "amount": {
+          "type": "number"
+        },
+        "channel": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Settled", "Pending", "Reversed"]
+        },
+        "occurredAt": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 32
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "loanId",
+        "loanCode",
+        "borrowerName",
+        "referenceCode",
+        "type",
+        "direction",
+        "amount",
+        "channel",
+        "status",
+        "occurredAt",
+        "notes",
+        "createdAt"
+      ]
+    },
+    "PaymentDeadline": {
+      "title": "PaymentDeadline",
+      "description": "Scheduled loan installment deadline for tracking upcoming and overdue payments.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "loanId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "loanCode": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 24,
+          "pattern": "^[A-Z0-9\\-]+$"
+        },
+        "borrowerName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "installmentNumber": {
+          "type": "number"
+        },
+        "totalInstallments": {
+          "type": "number"
+        },
+        "amountDue": {
+          "type": "number"
+        },
+        "principalPortion": {
+          "type": "number"
+        },
+        "interestPortion": {
+          "type": "number"
+        },
+        "dueDate": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 32
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Pending", "Due Soon", "Overdue", "Paid"]
+        },
+        "paidAt": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "loanId",
+        "loanCode",
+        "borrowerName",
+        "installmentNumber",
+        "totalInstallments",
+        "amountDue",
+        "principalPortion",
+        "interestPortion",
+        "dueDate",
+        "status",
+        "paidAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private authenticated user profile documents isolated by owner UID."
+    },
+    "/loans/{loanId}": {
+      "schema": { "$ref": "#/entities/LoanAccount" },
+      "description": "Microfinance loan accounts owned by the signed-in officer."
+    },
+    "/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/LoanTransaction" },
+      "description": "Immutable loan transaction ledger entries linked to a valid loanId."
+    },
+    "/deadlines/{deadlineId}": {
+      "schema": { "$ref": "#/entities/PaymentDeadline" },
+      "description": "Scheduled payment deadlines linked to a valid loanId."
+    }
+  }
+}
